@@ -28,10 +28,22 @@
               fakeNss
               nix
               skopeo
+              (writeTextFile {
+                name = "nix.conf";
+                text = ''
+                  build-users-group =
+                  experimental-features = nix-command flakes
+                  sandbox = false
+                '';
+                destination = "/etc/nix/nix.conf";
+              })
             ];
 
             pathsToLink = ["/bin" "/etc"];
           };
+          extraCommands = ''
+            mkdir -p tmp
+          '';
           config = {
             Env = [
               "NIX_PAGER=cat"
