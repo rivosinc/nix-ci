@@ -1,0 +1,43 @@
+# SPDX-FileCopyrightText: 2023 Rivos Inc.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-x86_64-container:
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v4
+
+      - name: Log in to the GitHub container registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build container image with `nix build`
+        run: nix build --print-build-logs
+
+      - name: Load container image into Docker
+        run: docker load < ./result
+
+      - name: Push image to container registry
+        run: docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
